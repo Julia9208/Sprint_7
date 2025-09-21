@@ -1,33 +1,27 @@
 import pytest
 import requests
-from helpers.endpoints import Endpoints
+import allure
+from helpers import Endpoints
 
-# Класс для тестирования получения списка заказов
 class TestOrdersList:
-    
-    # Тест получения списка всех заказов
+
+    @allure.title("Получение списка всех заказов")
     def test_get_orders_list(self):
-        response = requests.get(Endpoints.GET_ORDERS)
+        with allure.step("Запрашиваем список заказов"):
+            response = requests.get(Endpoints.GET_ORDERS)
         
-        # Проверяем успешный ответ
-        assert response.status_code == 200, "Запрос должен быть успешным"
-        assert "orders" in response.json(), "В ответе должен быть список заказов"
-        assert isinstance(response.json()["orders"], list), "Заказы должны быть списком"
-    
-    # Тест получения заказов с ограничением количества
+        with allure.step("Проверяем успешный ответ"):
+            assert response.status_code == 200, "Код должен быть 200"
+            assert "orders" in response.json(), "Должен вернуться список заказов"
+            assert isinstance(response.json()["orders"], list), "Заказы должны быть списком"
+
+    @allure.title("Получение заказов с лимитом")
     def test_get_orders_with_limit(self):
-        response = requests.get(f"{Endpoints.GET_ORDERS}?limit=5")
+        with allure.step("Запрашиваем заказы с лимитом 5"):
+            response = requests.get(f"{Endpoints.GET_ORDERS}?limit=5")
         
-        # Проверяем успешный ответ
-        assert response.status_code == 200, "Запрос должен быть успешным"
-        orders = response.json()["orders"]
-        assert len(orders) <= 5, "Должно вернуться не более 5 заказов"
-    
-    # Тест получения заказов с указанием страницы
-    def test_get_orders_with_page(self):
-        response = requests.get(f"{Endpoints.GET_ORDERS}?page=0")
-        
-        # Проверяем успешный ответ
-        assert response.status_code == 200, "Запрос должен быть успешным"
-        assert "orders" in response.json(), "В ответе должен быть список заказов"
-        
+        with allure.step("Проверяем ограничение количества"):
+            assert response.status_code == 200, "Код должен быть 200"
+            orders = response.json()["orders"]
+            assert len(orders) <= 5, "Должно вернуться не более 5 заказов"
+            

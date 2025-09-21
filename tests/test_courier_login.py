@@ -1,76 +1,49 @@
 import pytest
 import requests
-from helpers.endpoints import Endpoints
+import allure
+from helpers import Endpoints, COURIER_TEST_DATA
 
-# Класс для тестирования логина курьеров
 class TestLoginCourier:
-    
-    # Тест успешного логина курьера
+
+    @allure.title("Успешный логин курьера")
     def test_login_courier_success(self, create_and_delete_courier):
         login, password, courier_id = create_and_delete_courier
         
-        # Данные для логина
-        payload = {
-            "login": login,
-            "password": password
-        }
+        with allure.step("Выполняем логин"):
+            payload = {"login": login, "password": password}
+            response = requests.post(Endpoints.LOGIN_COURIER, json=payload)
         
-        response = requests.post(Endpoints.LOGIN_COURIER, json=payload)
-        
-        # Проверяем успешный логин
-        assert response.status_code == 200, "Логин должен быть успешным"
-        assert "id" in response.json(), "В ответе должен быть ID курьера"
-    
-    # Тест логина с неправильным паролем
+        with allure.step("Проверяем успешный логин"):
+            assert response.status_code == 200, "Код должен быть 200"
+            assert "id" in response.json(), "Должен вернуться ID курьера"
+
+    @allure.title("Логин с неправильным паролем")
     def test_login_wrong_password(self, create_and_delete_courier):
         login, password, courier_id = create_and_delete_courier
         
-        # Пытаемся логиниться с неправильным паролем
-        payload = {
-            "login": login,
-            "password": "wrong_password"
-        }
+        with allure.step("Пытаемся логиниться с неправильным паролем"):
+            payload = {"login": login, "password": "wrong_password"}
+            response = requests.post(Endpoints.LOGIN_COURIER, json=payload)
         
-        response = requests.post(Endpoints.LOGIN_COURIER, json=payload)
+        with allure.step("Проверяем ошибку"):
+            assert response.status_code == 404, "Должна быть ошибка 404"
+            assert "message" in response.json(), "Должно быть сообщение об ошибке"
+
+    @pytest.mark.parametrize("test_data", [
+        ("missing_login", 400),
+        ("missing_password", 400),
+        ("nonexistent_user", 404)
+    ])
+    @allure.title("Логин с проблемными данными: {test_data[0]}")
+    def test_login_problem_cases(self, test_data):
+        field_name, expected_code = test_data
         
-        # Должна вернуться ошибка
-        assert response.status_code == 404, "Должна быть ошибка 404"
-        assert "message" in response.json(), "В ответе должно быть сообщение об ошибке"
-    
-    # Тест логина без логина
-    def test_login_missing_login(self):
-        payload = {
-            "password": "test123"
-        }
+        with allure.step("Отправляем запрос с проблемными данными"):
+            payload = COURIER_TEST_DATA[field_name]
+            response = requests.post(Endpoints.LOGIN_COURIER, json=payload)
         
-        response = requests.post(Endpoints.LOGIN_COURIER, json=payload)
-        
-        # Проверяем что вернулась ошибка клиента (4xx)
-        assert 400 <= response.status_code < 500, "Должна быть клиентская ошибка"
-        assert "message" in response.json(), "В ответе должно быть сообщение об ошибке"
-    
-    # Тест логина без пароля
-    def test_login_missing_password(self):
-        payload = {
-            "login": "testuser"
-        }
-        
-        response = requests.post(Endpoints.LOGIN_COURIER, json=payload)
-        
-        # Проверяем что вернулась ошибка клиента (4xx)
-        assert 400 <= response.status_code < 500, "Должна быть клиентская ошибка"
-        assert "message" in response.json(), "В ответе должно быть сообщение об ошибке"
-    
-    # Тест логина несуществующего пользователя
-    def test_login_nonexistent_user(self):
-        payload = {
-            "login": "nonexistent_user",
-            "password": "password123"
-        }
-        
-        response = requests.post(Endpoints.LOGIN_COURIER, json=payload)
-        
-        # Должна вернуться ошибка 404
-        assert response.status_code == 404, "Должна быть ошибка 404"
-        assert "message" in response.json(), "В ответе должно быть сообщение об ошибке"
-        
+        with allure.step("Проверяем ответ"):
+            assert response.status_code == expected_code, f"Код должен быть {expected_code}"
+            if expected_code != 504:  # Пропускаем проверку для таймаута
+                assert "message" in response.json(), "Должно быть сообщение об ошибке"
+                
