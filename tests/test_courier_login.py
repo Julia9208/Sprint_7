@@ -44,6 +44,4 @@ class TestLoginCourier:
         
         with allure.step("Проверяем ответ"):
             assert response.status_code == expected_code, f"Код должен быть {expected_code}"
-            if expected_code != 504:  # Пропускаем проверку для таймаута
-                assert "message" in response.json(), "Должно быть сообщение об ошибке"
-                
+            assert "message" in response.json(), "Должно быть сообщение об ошибке"

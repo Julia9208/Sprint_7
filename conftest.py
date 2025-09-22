@@ -30,3 +30,16 @@ def create_and_delete_courier():
 
     if courier_id:
         requests.delete(f"{Endpoints.DELETE_COURIER}{courier_id}")
+@pytest.fixture
+def courier_data():
+    login = "test_user_" + generate_random_string(8)
+    password = "password123"
+    first_name = "Test User"
+
+    yield login, password, first_name
+ 
+    login_response = requests.post(Endpoints.LOGIN_COURIER, 
+                                         json={"login": login, "password": password})
+    if login_response.status_code == 200:
+        courier_id = login_response.json().get("id")
+        requests.delete(f"{Endpoints.DELETE_COURIER}{courier_id}")

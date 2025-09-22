@@ -1,41 +1,25 @@
 import pytest
 import requests
 import allure
-import random
-import string
+from helpers.generator import *
 from helpers import Endpoints, COURIER_TEST_DATA
 
 class TestCreateCourier:
 
-    def generate_random_string(self, length=10):
-        letters = string.ascii_lowercase
-        return ''.join(random.choice(letters) for i in range(length))
-
     @allure.title("Успешное создание курьера")
-    def test_create_courier_success(self):
-        with allure.step("Генерируем данные курьера"):
-            login = "test_user_" + self.generate_random_string(8)
-            password = "password123"
-            first_name = "Test User"
-        
+    def test_create_courier_success(self, courier_data):
         with allure.step("Создаем курьера"):
+            login, password, first_name = courier_data
             payload = {"login": login, "password": password, "firstName": first_name}
             response = requests.post(Endpoints.CREATE_COURIER, json=payload)
         
         with allure.step("Проверяем успешное создание"):
             assert response.status_code == 201, f"Код ответа должен быть 201, получен {response.status_code}"
             assert response.json().get("ok") == True, "Ответ должен содержать ok: true"
-        
-        with allure.step("Удаляем тестового курьера"):
-            login_response = requests.post(Endpoints.LOGIN_COURIER, 
-                                         json={"login": login, "password": password})
-            if login_response.status_code == 200:
-                courier_id = login_response.json().get("id")
-                requests.delete(f"{Endpoints.DELETE_COURIER}{courier_id}")
 
     @allure.title("Создание курьера с дублирующимся логином")
     def test_create_duplicate_courier(self, create_and_delete_courier):
-        login, password, courier_id = create_and_delete_courier
+        login = create_and_delete_courier[0]
         
         with allure.step("Пытаемся создать дубликат курьера"):
             payload = {
@@ -63,4 +47,4 @@ class TestCreateCourier:
         with allure.step("Проверяем ошибку клиента"):
             assert response.status_code in expected_codes, f"Код должен быть одним из {expected_codes}, получен {response.status_code}"
             assert "message" in response.json(), "Должно быть сообщение об ошибке"
-            
+
